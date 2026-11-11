@@ -1,5 +1,7 @@
-import pygame
+import asyncio
 import random
+
+import pygame
 
 pygame.init()
 myfont = pygame.font.SysFont("Futura", 15)
@@ -59,58 +61,68 @@ def hit(player, ball):
 
 # Main Program
 
-run = True
-# default: 400, 200, 10, 10, 0, 7
-play_ball = ball(400, 200, 10, 10, 0, 7)
-# default: 350, 485, 100, 21
-player1 = player(350, 485, 100, 21, player_vel)
+async def main():
+    global keepUps, highScore
 
-while run:
-    clock.tick(50)
+    run = True
+    # default: 400, 200, 10, 10, 0, 7
+    play_ball = Ball(400, 200, 10, 10, 0, 7)
+    # default: 350, 485, 100, 21
+    player1 = Player(350, 485, 100, 21, player_vel)
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            run = False
+    while run:
+        clock.tick(50)
 
-    keys = pygame.key.get_pressed()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
 
-    if keys[pygame.K_LEFT]:
-        player1.x -= player1.vel
+        keys = pygame.key.get_pressed()
 
-    if keys[pygame.K_RIGHT]:
-        player1.x += player1.vel
+        if keys[pygame.K_LEFT]:
+            player1.x -= player1.vel
 
-    # ball updating
-    if play_ball.y <= player1.y:
-        if hit(player1, play_ball):
-            # bounce
-            keepUps += 1
-            play_ball.ball_vel_y = -play_ball.ball_vel_y
-            play_ball.ball_vel_y -= gravity
+        if keys[pygame.K_RIGHT]:
+            player1.x += player1.vel
 
-            # ball direction changes depending on where it hits the player,
-            # with a random offset to prevent easy endless highscores
-            offset = random.randint(-1,1)
-            play_ball.ball_vel_x = -(player1.x - play_ball.x + (player1.width / 2)) / difficulty + offset
+        # ball updating
+        if play_ball.y <= player1.y:
+            if hit(player1, play_ball):
+                # bounce
+                keepUps += 1
+                play_ball.ball_vel_y = -play_ball.ball_vel_y
+                play_ball.ball_vel_y -= gravity
 
-    play_ball.ball_vel_y += gravity
+                # ball direction changes depending on where it hits the player,
+                # with a random offset to prevent easy endless highscores
+                offset = random.randint(-1,1)
+                play_ball.ball_vel_x = -(player1.x - play_ball.x + (player1.width / 2)) / difficulty + offset
 
-    play_ball.y += play_ball.ball_vel_y
-    play_ball.x += play_ball.ball_vel_x
+        play_ball.ball_vel_y += gravity
 
-    # boundary setting
-    if play_ball.x + play_ball.width >= pygame.display.get_surface().get_width() or play_ball.x <= 0:
-        play_ball.ball_vel_x = -play_ball.ball_vel_x
+        play_ball.y += play_ball.ball_vel_y
+        play_ball.x += play_ball.ball_vel_x
 
-    # defines what happens when play_ball is not caught
-    # highscore is reset and ball is respawned after reaching a certain depth
-    if play_ball.y >= 2000:
-        play_ball = ball(400, 200, 10, 10, 0, 7)
+        # boundary setting
+        if play_ball.x + play_ball.width >= pygame.display.get_surface().get_width() or play_ball.x <= 0:
+            play_ball.ball_vel_x = -play_ball.ball_vel_x
 
-        if keepUps > highScore:
-            highScore = keepUps
+        # defines what happens when play_ball is not caught
+        # highscore is reset and ball is respawned after reaching a certain depth
+        if play_ball.y >= 2000:
+            play_ball = Ball(400, 200, 10, 10, 0, 7)
 
-        keepUps = 0
+            if keepUps > highScore:
+                highScore = keepUps
 
-    draw(player1, play_ball)
+            keepUps = 0
 
+        draw(player1, play_ball)
+
+        # gives the browser a moment to draw the frame (needed for the web version)
+        await asyncio.sleep(0)
+
+    pygame.quit()
+
+
+asyncio.run(main())
